@@ -1,0 +1,113 @@
+#!busybox ash
+PATH=/bin
+/busybox mkdir /bin
+/busybox --install -s /bin
+/busybox ash
+
+#eudev başlatılacak
+#kural trigger action =add eklenecek
+moduller yüklenecek
+depmod -av
+lsmod
+udevadm trigger -c add
+
+diks mount edilecek
+exec edip siistem bağlanacak
+
+modüller alınacak
+etc/rulse.d
+etc/lib/rulse
+alınacak
+
+kmod yüklenecek
+lmod vb..
+
+by@puffos-81de:~/Masaüstü$ ls -la /sbin/|grep kmod
+lrwxrwxrwx  1 root root          9 Ara 10  2022 depmod -> /bin/kmod
+lrwxrwxrwx  1 root root          9 Ara 10  2022 insmod -> /bin/kmod
+lrwxrwxrwx  1 root root          9 Ara 10  2022 lsmod -> /bin/kmod
+lrwxrwxrwx  1 root root          9 Ara 10  2022 modinfo -> /bin/kmod
+lrwxrwxrwx  1 root root          9 Ara 10  2022 modprobe -> /bin/kmod
+lrwxrwxrwx  1 root root          9 Ara 10  2022 rmmod -> /bin/kmod
+
+
+#!/bin/sh
+
+# get_opt("init=/sbin/init") will return "/sbin/init"
+get_opt() {
+    echo "$@" | cut -d "=" -f 2
+}
+
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+[ -d /dev ]  || mkdir -m 0755 /dev
+[ -d /root ] || mkdir -m 0700 /root
+[ -d /sys ]  || mkdir /sys
+[ -d /proc ] || mkdir /proc
+
+# devtmpfs does not get automounted for initramfs
+mount -t devtmpfs devtmpfs /dev
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t tmpfs tmpfs /tmp
+
+# Sistem spesifik
+# USB
+modprobe musb_hdrc
+modprobe ti81xx
+modprobe sd_mod
+modprobe usb-storage
+
+modprobe omap_hsmmc
+modprobe mmc_block
+modprobe ext4
+
+echo "# Checking usb startup disk"
+sleep 3
+
+mkdir -p /mnt/usb
+
+mount -t vfat /dev/sda /mnt/usb 2> /dev/null || \
+  mount -t vfat /dev/sda1 /mnt/usb 2> /dev/null
+
+if [ -e "/mnt/usb/upgrade/run.sh" ]; then
+    echo "SCRIPT CALISTIRILIYOR..."
+    sh /mnt/usb/upgrade/run.sh
+    umount /mnt/usb
+fi
+
+# Defaults
+init="/sbin/init"
+root="/dev/mmcblk0p2"
+mnt_point="/mnt/rootfs"
+
+# Process command line options
+for i in $(cat /proc/cmdline); do
+    case $i in
+        root\=*)
+            root=$(get_opt $i)
+        ;;
+        init\=*)
+            init=$(get_opt $i)
+        ;;
+    esac
+done
+
+# Mount the root device
+mount "${root}" $mnt_point
+
+#Check if $init exists and is executable
+if [[ -x "$mnt_point/${init}" ]] ; then
+    mount --move /sys $mnt_point/sys
+    mount --move /dev $mnt_point/dev
+    mount --move /tmp $mnt_point/tmp
+
+    #Switch to the new root and execute init
+    exec switch_root $mnt_point "${init}"
+fi
+
+#This will only be run if the exec above failed
+echo "Failed to switch_root, dropping to a shell"
+exec sh
+

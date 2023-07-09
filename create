@@ -1,0 +1,173 @@
+#!/bin/bash
+
+#**************************fonksiyonlar************************
+function lddscript(){
+	#bash lddscript /bin/ls /tmp/test
+	if [ ${#} != 2 ]
+	then
+	    echo "usage $0 PATH_TO_BINARY target_folder"
+	    exit 1
+	fi
+
+	path_to_binary="$1"
+	target_folder="$2"
+
+	# if we cannot find the the binary we have to abort
+	if [ ! -f "${path_to_binary}" ]
+	then
+	    echo "The file '${path_to_binary}' was not found. Aborting!"
+	    exit 1
+	fi
+
+	# copy the binary itself
+	##echo "---> copy binary itself"
+	##cp --parents -v "${path_to_binary}" "${target_folder}"
+
+	# copy the library dependencies
+	echo "---> copy libraries"
+	ldd "${path_to_binary}" | awk -F'[> ]' '{print $(NF-1)}' | while read -r lib
+	do
+	    [ -f "$lib" ] && cp -v --parents "$lib" "${target_folder}"
+	done
+}
+function get_lib(){
+    ldd $1 | cut -f3 -d" " | while read lib ; do
+        if [[ "$lib" == "" ]] ; then
+            : empty line
+        elif ! echo ${libs[@]} | grep $lib >/dev/null; then
+            echo $lib
+            get_lib $lib
+        fi
+    done | sort | uniq
+}
+#**************************bağımlılık bulan fonksiyon**********
+function install_binary(){
+    get_lib $1 | while read lib ; do
+        file=initrd/lib/$(basename $lib)
+        if [[ ! -f $file ]] ; then
+            install $lib $file
+        fi
+    done
+    install $1 initrd/bin/$(basename $1)
+}
+
+#*******************************************************************
+#initrd adında bir klasör ve alt klasörler oluşturulmalı
+mkdir -p initrd
+mkdir -p initrd/bin/
+mkdir -p initrd/lib/
+ln -s lib initrd/lib64
+
+#*****************busybox hazırlanmalı************************
+cp /usr/bin/busybox initrd/bin/busybox #sistemden kopyalandı..
+lddscript initrd/bin/busybox initrd/ #sistemden kütüphaneler kopyalandı..
+#install_binary initrd/bin/busybox
+
+#*****************kmod hazırlanacak***************************
+cp /usr/bin/kmod initrd/bin/kmod #sistemden kopyalandı..
+lddscript initrd/bin/kmod initrd/ #sistemden kütüphaneler kopyalandı..
+ln -s kmod initrd/bin/depmod
+ln -s kmod initrd/bin/insmod
+ln -s kmod initrd/bin/lsmod
+ln -s kmod initrd/bin/modinfo
+ln -s kmod initrd/bin/modprobe
+ln -s kmod initrd/bin/rmmod
+#*****************modüller yüklenecek*************************
+#cp /lib/modules -rf initrd/
+mkdir -p initrd/lib/modules/
+mkdir -p initrd/lib/modules/$(uname -r)
+mkdir -p initrd/lib/modules/$(uname -r)/mdl
+
+cp /lib/modules/$(uname -r)/kernel/* -rf initrd/lib/modules/$(uname -r)/mdl/ #sistemden kopyalandı..
+#cp modul/* -rf initrd/lib/modules/$(uname -r)/ #sistemden kopyalandı..
+#cp ko/* -rf initrd/lib/modules/$(uname -r)/ #sistemden kopyalandı..
+/sbin/depmod --all --basedir=initrd
+#for directory in {crypto,fs,lib} \
+#    drivers/{block,ata,md,firewire} \
+#    drivers/{scsi,message,pcmcia,virtio} \
+#    drivers/usb/{host,storage}; do
+#    find /lib/modules/$(uname -r)/kernel/${directory}/ -type f \
+#        -exec install {} initrd/lib/modules/$(uname -r)/ \;
+#done
+#depmod -av
+
+#***************************udevd-udevadm**********************
+mkdir -p initrd/lib/systemd/
+cp /lib/systemd/systemd-udevd initrd/bin/systemd-udevd #sistemden kopyalandı..
+lddscript initrd/bin/systemd-udevd initrd/ #sistemden kütüphaneler kopyalandı..
+
+cp /bin/udevadm initrd/bin/udevadm #sistemden kopyalandı..
+lddscript initrd/bin/udevadm initrd/ #sistemden kütüphaneler kopyalandı..
+
+#*****************kurallar yüklenecek*************************
+mkdir -p initrd/etc/udev/
+cp /etc/udev/rules.d -rf  initrd/etc/udev/
+mkdir -p initrd/lib/udev/
+cp /lib/udev/rules.d -rf  initrd/lib/udev/
+mkdir -p initrd/etc/initramfs-tools
+cp /etc/initramfs-tools/initramfs.conf initrd/etc/initramfs-tools/initramfs.conf
+#*************************************************************
+
+cat > initrd/init << EOF
+#!/bin/busybox ash
+PATH=/bin
+/bin/busybox mkdir -p /bin
+/bin/busybox --install -s /bin
+#**********************************
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+[ -d /dev ]  || mkdir -m 0755 /dev
+[ -d /root ] || mkdir -m 0700 /root
+[ -d /sys ]  || mkdir /sys
+[ -d /proc ] || mkdir /proc
+mkdir -p /tmp /run
+# devtmpfs does not get automounted for initramfs
+mount -t devtmpfs devtmpfs /dev
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t tmpfs tmpfs /tmp
+systemd-udevd --daemon --resolve-names=never
+udevadm trigger --type=subsystems --action=add
+udevadm trigger --type=devices --action=add
+udevadm settle || true
+
+#systemd-udevd --daemon
+#udevadm trigger -c add
+#udevadm settle
+mkdir -p disk
+#diski bağlayalım
+modprobe ext4
+
+mount /dev/sda1 disk
+#dev sys proc taşıyalım
+#mount --move /sys /disk/sys
+#mount --move /proc /disk/proc
+#mount --move /dev /disk/dev
+#mount --move /run /disk/run
+#mount --move /tmp /disk/tmp
+for i in dev dev/pts proc sys run; do mount -o bind /$i disk/$i; done
+/bin/busybox ash
+
+EOF
+chmod +x initrd/init 
+cd initrd
+find |cpio -H newc -o >initrd.img
+cd ..
+
+mkdir -p iso
+mkdir -p iso/boot
+cp /boot/vmlinuz-$(uname -r) iso/boot/vmlinuz  #sistemde kullandığım kerneli kopyaladım istenirde kernel derlenebilir.
+mv initrd/initrd.img iso/boot/initrd.img #daha önce oluşturduğumuz **initrd.img** dosyamızı taşıyoruz.
+
+#grub menüsü oluşturuluyor..
+mkdir -p iso/boot/grub
+cat > iso/boot/grub/grub.cfg << EOF
+linux /boot/vmlinuz
+initrd /boot/initrd.img
+boot
+EOF
+
+grub-mkrescue iso/ -o distro.iso
+#qemu-system-x86_64 -cdrom distro.iso -m 1G
+
+
