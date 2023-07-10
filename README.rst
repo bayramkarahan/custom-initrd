@@ -143,7 +143,7 @@ Yukarıdaki üç satır **iso/boot/grub/grub.cfg** dosyasının içeri olacak ş
 Artık sistemi açabilen ve tty açıp bize suna bir yapı oluşturduk. 
 Çalıştırmak için qemu kullanılabililir.
 
-**qemu-system-x86_64 -cdrom distro.iso -m 1G** komutuyla çalıştırıp test edebiliriz.. 
+**qemu-system-x86_64 -cdrom distro.iso -m 1G** komutuyla çalıştırıp test edebiliriz. 
 Eğer hatasız yapılmışsa sistem açılacak ve tty açacaktır. Birçok komut rahatlıkla çalışan bir dağıtım oluşturmuş olduk.
 
 
@@ -252,7 +252,7 @@ Yukarıdaki üç satır **iso/boot/grub/grub.cfg** dosyasının içeri olacak ş
 Artık sistemi açabilen ve tty açıp bize suna bir yapı oluşturduk. 
 Çalıştırmak için qemu kullanılabililir.
 
-**qemu-system-x86_64 -cdrom distro.iso -m 1G** komutuyla çalıştırıp test edebiliriz.. 
+**qemu-system-x86_64 -cdrom distro.iso -m 1G** komutuyla çalıştırıp test edebiliriz.
 Eğer hatasız yapılmışsa sistem açılacak ve **init** ikili dosyamız çalışacaktır.
 Bizden bilgi girmemizi ve daha sonra girdiğimiz bilgiyi ekrana yazan bir bağımsız dağıtım yapmış olduk.
 
