@@ -95,7 +95,7 @@ içeriğine
 	/busybox ash
 şeklinde düzenle kaydet.
 
-**chomod +x init** komutu ile çalıştırılır yapılır.
+**chmod +x init** komutu ile çalıştırılır yapılır.
 Ardından **find ./ |cpio -H newc -o >initrd.img** komutu ile **initrd.img** dosyası oluşturulur.
 
 Oluşturulan **initrd.img** dosyası çalışacak tty açacak(konsol elde etmiş olacağız). 
