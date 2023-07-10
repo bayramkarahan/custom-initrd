@@ -67,8 +67,8 @@ Bunun için;
 
 .. code-block:: shell
 
-	distro/busybox
-	distro/init
+	distro/initrd/busybox
+	distro/initrd/init
 
 yapıyı oluşturmalıyız . Bunun  için aşağıdaki komutlar çalıştırılır.
 
@@ -76,14 +76,15 @@ yapıyı oluşturmalıyız . Bunun  için aşağıdaki komutlar çalıştırıl�
 
 	mkdir distro
 	cd distro
-	cp /bin/busybox ./busybox	
-	ldd ./busybox	 
+        mkdir -p initrd
+	cp /bin/busybox initrd/busybox	
+	ldd initrd/busybox	 
 	özdevimli bir çalıştırılabilir değil
 
 "özdevimli bir çalıştırılabilir değil" dinamik değil diyor yani static kısacası bir bağımlılığı yok demektir.
 Eğer bağımlılığı olsaydı bağımlı olduğu dosyalarıda konumlarına göre kopyalamamız gerekmekteydi.
 
-**touch init** #dosyasını oluştur
+**touch initrd/init** #dosyasını oluştur
 içeriğine
 
 .. code-block:: shell
@@ -95,8 +96,8 @@ içeriğine
 	/busybox ash
 şeklinde düzenle kaydet.
 
-**chmod +x init** komutu ile çalıştırılır yapılır.
-Ardından **find ./ |cpio -H newc -o >initrd.img** komutu ile **initrd.img** dosyası oluşturulur.
+**chmod +x initrd/init** komutu ile çalıştırılır yapılır.
+Ardından **find initrd/ |cpio -H newc -o >./initrd.img** komutu ile **initrd.img** dosyası oluşturulur.
 
 Oluşturulan **initrd.img** dosyası çalışacak tty açacak(konsol elde etmiş olacağız). 
 Aslında bu işlemi yapan şey busybox ikili dosyası.
@@ -105,9 +106,9 @@ Son aşamada oluşan yapı şu şekilde oluyor.
 
 .. code-block:: shell
 
-	distro/init
-	distro/initrd.img
-	distro/busybox
+	distro/initrd/init
+	distro/initrd/busybox
+        distro/initrd.img
 
 Bize sadece distro klasöründeki **initrd.img** dosyası daha sonra kullanmak üzere gerekli olacak.
 
