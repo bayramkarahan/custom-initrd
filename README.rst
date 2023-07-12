@@ -36,27 +36,27 @@ Ardından, initrd içine dahil etmek istediğimiz temel dosyaları ve dizinleri 
 	done
 
     
-Gerekli olacak dosyalarımızın dizin yapısı ve konumu aşağıdaki gibi olmalıdır. Anlatım buna göre yapalacaktır. Örneğin S1 ifadesi satır 1 anlamında anlatımı kolaylaştımak için yazılmıştır. Gerekli olan dosyaların aşağıdaki dizin yapısında oluşturmak için yapılması gerekenleri adım adım anlatılacaktır. 
+Gerekli olacak dosyalarımızın dizin yapısı ve konumu aşağıdaki gibi olmalıdır. Anlatım buna göre yapalacaktır. Örneğin S1 ifadesi satır 1 anlamında anlatımı kolaylaştımak için yazılmıştır. Aşağıdaki yapıyı oluşturmak için yapılması gerekenleri adım adım anlatılacaktır. 
     
     .. code-block:: shell
     
-	S1- distro/initrd/bin/busybox
-	S2- distro/initrd/bin/kmod
-	S3- distro/initrd/bin/debmod
-	S4- distro/initrd/bin/insmod
-	S5- distro/initrd/bin/lsmod
-	S6- distro/initrd/bin/modprobe
-	S7- distro/initrd/bin/rmmod
-	S8- distro/initrd/bin/modinfo
-	S9- distro/initrd/lib/modules/$(uname -r)/moduller
-	S10- distro/initrd/bin/systemd-udevd
-	S11- distro/initrd/bin/udevadm
-	S12- distro/etc/udev/rules.d
-	S13- distro/lib/udev/rules.d
-	S14- distro/initrd/bin/init
-	S15- distro/iso/initrd.img
-	S16- distro/iso/vmlinuz
-	S17- distro/iso/grub/grub.cfg
+	S1- distro/initrd/bin/busybox				#dosya
+	S2- distro/initrd/bin/kmod				#dosya
+	S3- distro/initrd/bin/debmod				#dosya
+	S4- distro/initrd/bin/insmod				#dosya
+	S5- distro/initrd/bin/lsmod				#dosya
+	S6- distro/initrd/bin/modprobe				#dosya
+	S7- distro/initrd/bin/rmmod				#dosya
+	S8- distro/initrd/bin/modinfo				#dosya
+	S9- distro/initrd/lib/modules/$(uname -r)/moduller	#dizin
+	S10- distro/initrd/bin/systemd-udevd			#dosya
+	S11- distro/initrd/bin/udevadm				#dosya
+	S12- distro/etc/udev/rules.d				#dizin
+	S13- distro/lib/udev/rules.d				#dizin
+	S14- distro/initrd/bin/init				#dosya
+	S15- distro/iso/initrd.img				#dosya
+	S16- distro/iso/vmlinuz					#dosya
+	S17- distro/iso/grub/grub.cfg				#dosya
 	
 Dizin Yapısının oluşturulması
 +++++++++++++++++++++++++++++
@@ -130,17 +130,17 @@ udev, Linux çekirdeği tarafından sağlanan bir altyapıdır ve donanım aygı
 
 S10- distro/initrd/bin/udevadm
 ++++++++++++++++++++++++++++++
-	udevadm, Linux işletim sistemlerinde kullanılan bir araçtır. Bu araç, udev (Linux çekirdeği tarafından sağlanan bir hizmet) ile etkileşim kurmamızı sağlar. udevadm, sistemdeki aygıtların yönetimini kolaylaştırmak için kullanılır.
+udevadm, Linux işletim sistemlerinde kullanılan bir araçtır. Bu araç, udev (Linux çekirdeği tarafından sağlanan bir hizmet) ile etkileşim kurmamızı sağlar. udevadm, sistemdeki aygıtların yönetimini kolaylaştırmak için kullanılır.
 
 udevadm komutu, birçok farklı parametreyle kullanılabilir. İşte bazı yaygın kullanımları:
 
-    **udevadm info:** Bu komut, belirli bir aygıt hakkında ayrıntılı bilgi sağlar. Örneğin, udevadm info -a -n /dev/sda komutunu kullanarak /dev/sda aygıtıyla ilgili ayrıntıları alabilirsiniz.
+**udevadm info:** Bu komut, belirli bir aygıt hakkında ayrıntılı bilgi sağlar. Örneğin, udevadm info -a -n /dev/sda komutunu kullanarak /dev/sda aygıtıyla ilgili ayrıntıları alabilirsiniz.
 
-    **udevadm monitor:*** Bu komut, sistemdeki aygıtlarla ilgili olayları izlemek için kullanılır. Örneğin, udevadm monitor --property komutunu kullanarak aygıtların bağlanma ve çıkarma olaylarını izleyebilirsiniz.
+**udevadm monitor:*** Bu komut, sistemdeki aygıtlarla ilgili olayları izlemek için kullanılır. Örneğin, udevadm monitor --property komutunu kullanarak aygıtların bağlanma ve çıkarma olaylarını izleyebilirsiniz.
 
-    **udevadm trigger:*** Bu komut, udev kurallarını yeniden değerlendirmek ve aygıtları yeniden tanımak için kullanılır. Örneğin, udevadm trigger --subsystem-match=block komutunu kullanarak blok aygıtlarını yeniden tanımlayabilirsiniz.
+**udevadm trigger:*** Bu komut, udev kurallarını yeniden değerlendirmek ve aygıtları yeniden tanımak için kullanılır. Örneğin, udevadm trigger --subsystem-match=block komutunu kullanarak blok aygıtlarını yeniden tanımlayabilirsiniz.
 
-    **udevadm control:** Bu komut, udev hizmetini kontrol etmek için kullanılır. Örneğin, udevadm control --reload komutunu kullanarak udev kurallarını yeniden yükleyebilirsiniz.
+**udevadm control:** Bu komut, udev hizmetini kontrol etmek için kullanılır. Örneğin, udevadm control --reload komutunu kullanarak udev kurallarını yeniden yükleyebilirsiniz.
 
 Bu sadece bazı temel kullanımlardır ve udevadm'nin daha fazla özelliği vardır. Daha fazla bilgi için, man udevadm komutunu kullanarak udevadm'nin man sayfasını inceleyebilirsiniz.
 **Not:** udevadm systemd ve no systemd için aynı kullanımdadır. İki sistem içinde geçerlidir.
