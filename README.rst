@@ -2,11 +2,7 @@ initrd Nedir? Nasıl Hazırlanır?
 +++++++++++++++++++++++++++++++
 initrd (initial RAM disk), Linux işletim sistemlerinde kullanılan bir geçici dosya sistemidir. Bu dosya sistemi, işletim sistemi açılırken kullanılan bir köprü görevi görür ve gerçek kök dosya sistemine geçiş yapmadan önce gerekli olan modülleri ve dosyaları içerir.Ayrıca, sistem başlatıldığında kök dosya sistemine erişim sağlamadan önce gerekli olan dosyaları yüklemek için de kullanılabilir.
 
-initrd'nin hazırlanması için aşağıdaki adımları izleyebilirsiniz:
-
-    İlk adım olarak, initrd için bir dizin oluşturun. Örneğin, **/distro/initrd** gibi bir dizin seçebilirsiniz.
-
-    Ardından, initrd içine dahil etmek istediğimiz temel dosyaları ve dizinleri bağımlılıklarıyla kopyalamalıyız.Bu dosyalar, sistem başlatıldığında kullanılacak olan temel bileşenleri içermelidir. Örneğin, donanım sürücüleri, ağ ayarları veya diğer gereksinimleriniz olabilir. Bağımlılıklar için aşağıdaki script kullanılacaktır. Script lddscript.sh dosyası olarak kaydedip kullanabilirsiniz. **bash lddscript.sh /bin/ls /tmp/test** şeklinde kullandığımızda /tmp/test/ dizinine **ls** dosyasının konumunu ve bağımlılıklarını kopyalayacaktır.
+Ardından, initrd içine dahil etmek istediğimiz temel dosyaları ve dizinleri bağımlılıklarıyla kopyalamalıyız.Bu dosyalar, sistem başlatıldığında kullanılacak olan temel bileşenleri içermelidir. Örneğin, donanım sürücüleri, ağ ayarları veya diğer gereksinimleriniz olabilir. Bağımlılıklar için aşağıdaki script kullanılacaktır. Script lddscript.sh dosyası olarak kaydedip kullanabilirsiniz. **bash lddscript.sh /bin/ls /tmp/test** şeklinde kullandığımızda /tmp/test/ dizinine **ls** dosyasının konumunu ve bağımlılıklarını kopyalayacaktır.
     
     .. code-block:: shell
 
@@ -40,7 +36,7 @@ initrd'nin hazırlanması için aşağıdaki adımları izleyebilirsiniz:
 	done
 
     
-    Gerekli olacak dosyalarımızın dizin yapısı ve konumu aşağıdaki gibi olmalıdır. Anlatım buna göre yapalacaktır. Örneğin S1 ifadesi satır 1 anlamında anlatımı kolaylaştımak için yazılmıştır. Gerekli olan dosyaların aşağıdaki dizin yapısında oluşturmak için yapılması gerekenleri adım adım anlatılacaktır. 
+Gerekli olacak dosyalarımızın dizin yapısı ve konumu aşağıdaki gibi olmalıdır. Anlatım buna göre yapalacaktır. Örneğin S1 ifadesi satır 1 anlamında anlatımı kolaylaştımak için yazılmıştır. Gerekli olan dosyaların aşağıdaki dizin yapısında oluşturmak için yapılması gerekenleri adım adım anlatılacaktır. 
     
     .. code-block:: shell
     
@@ -125,7 +121,7 @@ Bu bölümde modüller hazırlanacak. Burada dikkat etmemiz gereken önemli bir 
 S9- distro/initrd/bin/systemd-udevd
 +++++++++++++++++++++++++++++++++++
 	
-	udev, Linux çekirdeği tarafından sağlanan bir altyapıdır ve donanım aygıtlarının dinamik olarak algılanmasını ve yönetilmesini sağlar. systemd-udevd ise udev'in bir bileşenidir ve donanım olaylarını işlemek için kullanılır. Daha detaylı bilgi için yazının devamında udev nedir konu başlığı altında anlatılmıştır. systemd için **/lib/systemd/systemd-udevd**, no systemd için **/sbin/udevd** kullanılır. Biz systemd için tasarladığımız için **/lib/systemd/systemd-udevd** kullanıyoruz.
+udev, Linux çekirdeği tarafından sağlanan bir altyapıdır ve donanım aygıtlarının dinamik olarak algılanmasını ve yönetilmesini sağlar. systemd-udevd ise udev'in bir bileşenidir ve donanım olaylarını işlemek için kullanılır. Daha detaylı bilgi için yazının devamında udev nedir konu başlığı altında anlatılmıştır. systemd için **/lib/systemd/systemd-udevd**, no systemd için **/sbin/udevd** kullanılır. Biz systemd için tasarladığımız için **/lib/systemd/systemd-udevd** kullanıyoruz.
 	
 	.. code-block:: shell
 
