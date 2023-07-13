@@ -1,40 +1,47 @@
+Linux Tabanlı Sistem Tasarımı
++++++++++++++++++++++++++++++
+
+Sistem İçin Gerekli Olan Dosyalar Ve Açılış Süreci
+++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Linux sisteminin açılabilmesi için aşağıdaki 3 dosya yeterli. 
+
+    .. code-block:: shell
+
+	distro/iso/boot/initrd.img
+	distro/iso/boot/vmlinuz
+	distro/iso/boot/grub/grub.cfg
+	
+Bu dosyaları yukarıdaki gibi dizin konumlarına koyduktan sonra, 
+**grub-mkrescue iso/ -o distro.iso #iso doyamız oluşturulur.**  komutuyla **distro.iso** dosyası elde ederiz. Artık iso dosyamız boot edebilen hazırlanmış bir dosyadır. Burada bazı sorulara cevap vermemiz gerekmektedir. 
+
+**distro/iso/boot/initrd.img** dosyasını sistemin açılış sürecinden ön işlemleri yapmak ve gerçek sisteme geçiş sürecini yöneten bir dosyadır. Yazın devamında nasıl hazırlanacağı anlatılacaktır. 
+
+**distro/iso/boot/vmlinuz** dosyamız kernelimiz oluyor. Ben kullandığım debian sisteminin mevcut kernelini kullandım. İstenirse kernel derlenebilir. 
+
+**distro/iso/boot/grub/grub.cfg** dosyamız ise initrd.img ve vmlinuz dosyalarının grub yazılımının nereden bulacağını gösteren yapılandırma dosyasıdır.
+
+Bir linux siisteminin açılış süreci şu şekilde olmaktadır.
+ 
+1- **Bilgisayara Güç Verilmesi**
+
+2- **Bios İşlemleri Yapılıyor(POST)**
+
+3- **LILO/GRUB Yazılımı Yükleniyor(grub.cfg dosyası okunuyor ve vmlinuz ve initrd.img devreye giriyor)**
+
+4- **vmlinuz initrd.img sistemini belleğe yüklüyor**
+
+5- **vmlinuz initrd.img sistemini belleğe yüklüyor**
+
+6- **initrd.img içindeki init dosyasındaki işlem sürecine göre sistem işlemlere devam ediyor**
+
+7- **initrd.img içindeki init dosyası temel işlemleri ve modülleri yükledikten sonra disk üzerindeki sisteme(/sbin/init) exec switch_root komutuyla süreci devrederek görevini tamamlamış olur**
+
+Yazının devamında sistem için gerekli olan 3 temel dosyanın hazırlanması ve iso yapılma süreci anlatılacaktır.
+
 initrd Nedir? Nasıl Hazırlanır?
 +++++++++++++++++++++++++++++++
 initrd (initial RAM disk), Linux işletim sistemlerinde kullanılan bir geçici dosya sistemidir. Bu dosya sistemi, işletim sistemi açılırken kullanılan bir köprü görevi görür ve gerçek kök dosya sistemine geçiş yapmadan önce gerekli olan modülleri ve dosyaları içerir.Ayrıca, sistem başlatıldığında kök dosya sistemine erişim sağlamadan önce gerekli olan dosyaları yüklemek için de kullanılabilir.
-
-Ardından, initrd içine dahil etmek istediğimiz temel dosyaları ve dizinleri bağımlılıklarıyla kopyalamalıyız.Bu dosyalar, sistem başlatıldığında kullanılacak olan temel bileşenleri içermelidir. Örneğin, donanım sürücüleri, ağ ayarları veya diğer gereksinimleriniz olabilir. Bağımlılıklar için aşağıdaki script kullanılacaktır. Script lddscript.sh dosyası olarak kaydedip kullanabilirsiniz. **bash lddscript.sh /bin/ls /tmp/test** şeklinde kullandığımızda /tmp/test/ dizinine **ls** dosyasının konumunu ve bağımlılıklarını kopyalayacaktır.
-    
-    .. code-block:: shell
-
-	#!/bin/bash
-	#bash lddscript binaryPath binaryTarget
-	if [ ${#} != 2 ]
-	then
-	    echo "usage $0 PATH_TO_BINARY target_folder"
-	    exit 1
-	fi
-
-	path_to_binary="$1"
-	target_folder="$2"
-
-	# if we cannot find the the binary we have to abort
-	if [ ! -f "${path_to_binary}" ]
-	then
-	    echo "The file '${path_to_binary}' was not found. Aborting!"
-	    exit 1
-	fi
-
-	# copy the binary itself
-	##echo "---> copy binary itself"
-	##cp --parents -v "${path_to_binary}" "${target_folder}"
-
-	# copy the library dependencies
-	echo "---> copy libraries"
-	ldd "${path_to_binary}" | awk -F'[> ]' '{print $(NF-1)}' | while read -r lib
-	do
-	    [ -f "$lib" ] && cp -v --parents "$lib" "${target_folder}"
-	done
-
     
 Gerekli olacak dosyalarımızın dizin yapısı ve konumu aşağıdaki gibi olmalıdır. Anlatım buna göre yapalacaktır. Örneğin S1 ifadesi satır 1 anlamında anlatımı kolaylaştımak için yazılmıştır. Aşağıdaki yapıyı oluşturmak için yapılması gerekenleri adım adım anlatılacaktır. 
     
@@ -57,6 +64,7 @@ Gerekli olacak dosyalarımızın dizin yapısı ve konumu aşağıdaki gibi olma
 	S15- distro/iso/initrd.img				#dosya
 	S16- distro/iso/vmlinuz					#dosya
 	S17- distro/iso/grub/grub.cfg				#dosya
+
 	
 Dizin Yapısının oluşturulması
 +++++++++++++++++++++++++++++
@@ -76,9 +84,11 @@ Aşağıdaki komutları çalıştırdığımızda dizin yapımız oluşacaktır.
 		mkdir -p iso/boot
 		mkdir -p iso/boot/grub
 
+
 S1- distro/initrd/bin/busybox
 +++++++++++++++++++++++++++++
 busybox yazının devamında busybox nedir başlığı altında anlatılmıştır. Burada sisteme nasıl ekleneceği anlatılacaktır.
+busybıx dosyamızın bağımlılıklarının **lddscript.sh** scripti ile initrd içine kopyalayacağız. Yazının devamında **Bağımlılık Tespiti** konu başlığı altında anlatılmıştır.
 	
 	.. code-block:: shell
 	
@@ -151,7 +161,8 @@ Bu sadece bazı temel kullanımlardır ve udevadm'nin daha fazla özelliği vard
 		lddscript initrd/bin/udevadm initrd/ #sistemden kütüphaneler kopyalandı..
 
 S12- distro/etc/udev/rules.d--S13- distro/lib/udev/rules.d
-++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 "rules" kelimesi, Linux işletim sistemi veya bir programda belirli bir davranışı tanımlayan ve yönlendiren kuralları ifade eder. Bu kurallar, sistem veya programın nasıl çalışacağını belirlemek için kullanılır ve genellikle yapılandırma dosyalarında veya betiklerde tanımlanır.
 
 Linux'ta "rules" terimi, genellikle udev kuralları veya iptables kuralları gibi belirli bileşenlerle ilişkilendirilir.
@@ -252,6 +263,43 @@ Artık sistemi açabilen ve tty açıp bize suna bir yapı oluşturduk. Çalış
 
 
 **qemu-system-x86_64 -cdrom distro.iso -m 1G** komutuyla çalıştırıp test edebiliriz. 
+
+Bağımlılıkların Tespiti
++++++++++++++++++++++++
+İkili dosyasının iki tür derlenme şekli vardır(statik ve dinamik). Statik derleme gerekli olan kütüphaneleri içerisinde barındıran tek bir dosyadır. Dinamik olan ise gerekli olan kütüphane dosyaları ikili dosya dışında tutulmaktadır. İkili dosyamızın bağımlılıklarının bulunması için aşağıdaki scripti kullanabiliriz. Scripti lddscript.sh dosyası olarak kaydedip kullanabilirsiniz. **bash lddscript.sh /bin/ls /tmp/test** şeklinde kullandığımızda /tmp/test/ dizinine **ls** ikili dosyasının konumunu ve bağımlılıklarını kopyalayacaktır.
+    
+    .. code-block:: shell
+
+	#!/bin/bash
+	#bash lddscript binaryPath binaryTarget
+	if [ ${#} != 2 ]
+	then
+	    echo "usage $0 PATH_TO_BINARY target_folder"
+	    exit 1
+	fi
+
+	path_to_binary="$1"
+	target_folder="$2"
+
+	# if we cannot find the the binary we have to abort
+	if [ ! -f "${path_to_binary}" ]
+	then
+	    echo "The file '${path_to_binary}' was not found. Aborting!"
+	    exit 1
+	fi
+
+	# copy the binary itself
+	##echo "---> copy binary itself"
+	##cp --parents -v "${path_to_binary}" "${target_folder}"
+
+	# copy the library dependencies
+	echo "---> copy libraries"
+	ldd "${path_to_binary}" | awk -F'[> ]' '{print $(NF-1)}' | while read -r lib
+	do
+	    [ -f "$lib" ] && cp -v --parents "$lib" "${target_folder}"
+	done
+
+
 
 busybox Nedir?
 ++++++++++++++
