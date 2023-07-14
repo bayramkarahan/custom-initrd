@@ -87,7 +87,7 @@ Aşağıdaki komutları çalıştırdığımızda dizin yapımız oluşacaktır.
 
 S1- distro/initrd/bin/busybox
 +++++++++++++++++++++++++++++
-busybox yazının devamında busybox nedir başlığı altında anlatılmıştır. Burada sisteme nasıl ekleneceği anlatılacaktır.
+busybox hakkında bilgi almak için busybox yazısında anlatılmıştır. Burada sisteme nasıl ekleneceği anlatılacaktır.
 busybıx dosyamızın bağımlılıklarının **lddscript.sh** scripti ile initrd içine kopyalayacağız. Yazının devamında **Bağımlılık Tespiti** konu başlığı altında anlatılmıştır.
 	
 	.. code-block:: shell
@@ -97,7 +97,7 @@ busybıx dosyamızın bağımlılıklarının **lddscript.sh** scripti ile initr
 
 S2-S8 distro/initrd/bin/kmod
 ++++++++++++++++++++++++++++
-kmod yazının devamında kmod nedir başlığı altında anlatılmıştır. Burada sisteme nasıl ekleneceği anlatılacaktır.
+kmod yazısında kmod anlatılmıştır. Burada sisteme nasıl ekleneceği anlatılacaktır.
 	
 	.. code-block:: shell
 	
@@ -131,7 +131,7 @@ Bu bölümde modüller hazırlanacak. Burada dikkat etmemiz gereken önemli bir 
 S9- distro/initrd/bin/systemd-udevd
 +++++++++++++++++++++++++++++++++++
 	
-udev, Linux çekirdeği tarafından sağlanan bir altyapıdır ve donanım aygıtlarının dinamik olarak algılanmasını ve yönetilmesini sağlar. systemd-udevd ise udev'in bir bileşenidir ve donanım olaylarını işlemek için kullanılır. Daha detaylı bilgi için yazının devamında udev nedir konu başlığı altında anlatılmıştır. systemd için **/lib/systemd/systemd-udevd**, no systemd için **/sbin/udevd** kullanılır. Biz systemd için tasarladığımız için **/lib/systemd/systemd-udevd** kullanıyoruz.
+udev, Linux çekirdeği tarafından sağlanan bir altyapıdır ve donanım aygıtlarının dinamik olarak algılanmasını ve yönetilmesini sağlar. systemd-udevd ise udev'in bir bileşenidir ve donanım olaylarını işlemek için kullanılır. Daha detaylı bilgi için udev yazısında anlatılmıştır. systemd için **/lib/systemd/systemd-udevd**, no systemd için **/sbin/udevd** kullanılır. Biz systemd için tasarladığımız için **/lib/systemd/systemd-udevd** kullanıyoruz.
 	
 	.. code-block:: shell
 
@@ -217,8 +217,13 @@ kernel ilk olarak initrd.img dosyasını ram'e yükleyecek ve ardından **init**
 		modprobe ext4		#ext4 modülü yükleniyor harici olarak yüklememiz gerekiyor
 		mount /dev/sda1 disk 	#diski bağlayalım
 		
+		# dev sys proc taşıyalım
+		mount --move /dev /disk/dev
+		mount --move /sys /disk/sys
+		mount --move /proc /disk/proc
+
 		exec switch_root /disk /sbin/init	#sistemi initrd içindeki initten sda1 diskinde olan /sbin/init'e devrediyoruz.
-		/bin/busybox ash	#eğer üst satırdaki devir işlemi olmazsa bu satır çalışacak ve tty açılacaktır.
+		/bin/busybox ash	#eğer üst satırdaki görev devir işlemi olmazsa bu satır çalışacak ve tty açılacaktır.
 	EOF
 	chmod +x initrd/init #init dosyasına çalıştırma izni veriyoruz.
 	cd initrd
@@ -301,133 +306,7 @@ Bağımlılıkların Tespiti
 
 
 
-busybox Nedir?
-++++++++++++++
-Busybox tek bir dosya halinde bulunan birçok araç seçine sahip olan bir programdır. Bu araçlar initramfs sisteminde ve sistem genelinde sıkça kullanılabilir. Busybox aşağıdaki gibi kullanılır. Örneğin, dosya listelemek için ls komutunu kullanmak isterseniz:
-
-.. code-block:: shell
-
-	$ busybox ls
-
-Busyboxtaki tüm araçları sisteme sembolik bağ atmak için aşağıdaki gibi bir yol izlenebilir. Bu işlem var olan dosyaları sildiği için tehlikeli olabilir. Sistemin tasarımına uygun olarak yapılmalıdır.
-
-.. code-block:: shell
-
-	$ busybox --install -s /bin # -s parametresi sembolik bağ olarak kurmaya yarar.
-
-Busybox **static** olarak derlenmediği sürece bir libc kütüphanesine ihtiyaç duyar. initramfs içerisinde kullanılacaksa içerisine libc dahil edilmelidir. Bir dosyanın static olarak derlenip derlenmediğini öğrenmek için aşağıdaki komut kullanılır.
-
-.. code-block:: shell
-
-	$ ldd /bin/busybox # static derlenmişse hata mesajı verir. Derlenmemişse bağımlılıklarını listeler.
-
-Busybox derlemek için öncelikle **make defconfig** kullanılarak veya önceden oluşturduğumuz yapılandırma dosyasını atarak yapılandırma işlemi yapılır. Ardından eğer static derleme yapacaksak yapılandırma dosyasına müdahale edilir. Son olarak **make** komutu kullanarak derleme işlemi yapılır.
-
-.. code-block:: shell
-
-	$ make defconfig
-	$ sed -i "s|.*CONFIG_STATIC_LIBGCC .*|CONFIG_STATIC_LIBGCC=y|" .config
-	$ sed -i "s|.*CONFIG_STATIC .*|CONFIG_STATIC=y|" .config
-	$ make
-
-Derleme bittiğinde kaynak kodun bulunduğu dizinde busybox dosyamız oluşmuş olur.
-
-Static olarak derlemiş olduğumuz busyboxu kullanarak milimal kök dizin oluşturabiliriz. Burada static yapı kallanılmayacaktır. 
-Sistemdeki /bin/busybox kullanılacaktır. Eğer yoksa busybox sisteme yüklenmelidir.
-
-kmod Nedir? Nasıl Yazılır ve Kullanılır?
-++++++++++++++++++++++++++++++++++++++++++++++++
-
-Linux çekirdeği ile donanım arasındaki haberleşmeyi sağlayan kod parçalarıdır. Bu kod parçalarını kernele eklediğimizde kerneli tekrardan derlememiz gerekmektedir. Her eklenen koddan sonra kernel derleme, kod çıkarttığımzda kernel derlemek ciddi bir iş yükü ve karmaşa yaratacaktır.
-
-Bu sorunların çözümü için modul vardır. moduller kernele istediğimiz kod parpalarını ekleme ya da çıkartma yapabiliyoruz. Bu işlemleri yaparken kenel derleme işlemi yapmamıza gerek yok.
-
-Kernele modul yükleme kaldırma için kmod aracı kullanılmaktadır. kmaod aracı;
-
-	.. code-block:: shell
-
-		ln -s kmod /bin/depmod
-		ln -s kmod /bin/insmod
-		ln -s kmod /initrd/bin/lsmod
-		ln -s kmod /bin/modinfo
-		ln -s kmod /bin/modprobe
-		ln -s kmod /bin/rmmod
-
-şeklinde sembolik bağlarla yeni araçlar oluşturulmuştur.
-
-**lsmod :** yüklü modulleri listeler
-
-**insmod:** tek bir modul yükler
-
-**rmmod:** tek bir modul siler
-
-**modinfo:** modul hakkında bilgi alınır 
-
-**modprobe:** insmod komutunun aynısı fakat daha işlevseldir. module ait bağımlı olduğu modülleride yüklemektedir. modprobe  modülü /lib/modules/ dizini altında aramaktadır.
-
-**depmod:** /lib/modules dizinindeki modüllerin listesini günceller. Fakat başka bir dizinde ise basedir=konum şeklinde belirtmek gerekir. konum dizininde /lib/modules/** şeklinde kalsörler olmalıdır.
-
- 
-
-hello.c dosyamız
-++++++++++++++++
-
-	.. code-block:: shell
-
-		#include <linux/module.h>
-		#include <linux/kernel.h>
-		#include <linux/init.h>
-		MODULE_DESCRIPTION("Hello World examples");
-		MODULE_LICENSE("GPL");
-		MODULE_AUTHOR("Bayram");
-		static int __init hello_init(void)
-		{
-		printk(KERN_INFO "Hello world!\n");
-		return 0;
-		}
-		static void __exit hello_cleanup(void)
-		{
-		printk(KERN_INFO "remove module.\n");
-		}
-		module_init(hello_init);
-		module_exit(hello_cleanup);
 
 
-Makefile dosyamız
-+++++++++++++++++
 
-	.. code-block:: shell
-
-		obj-m+=my_module.o
-		all:
-		    make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
-		clean:
-		    make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
-
-modülün derlenmesi ve eklenip kaldırılması
-++++++++++++++++++++++++++++++++++++++++++
-
-	.. code-block:: shell
-
-		make
-
-		insmod my_modul.ko // modül kernele eklendi.
-
-		lsmod | grep my_modul //modül yüklendi mi kontrol ediliyor.
-
-		rmmod my_modul // modül kernelden çıkartılıyor.
-
-Not:
-++++
-dmesg ile log kısmında eklendiğinde Hello Word yazısını ve  kaldırıldığında modul ismini görebiliriz.
-
-udev Nedir? Niçin Kullanılır?
-++++++++++++++++++++++++++++++
-systemd-udevd, Linux sistemlerinde donanım aygıtlarının eşleştirilmesi ve yönetimi için kullanılan bir sistem hizmetidir. Bu hizmet, udev adı verilen bir alt sistem üzerinde çalışır ve donanım olaylarını izler, aygıt dosyalarını oluşturur ve aygıtların durumunu günceller.
-
-udev, Linux çekirdeği tarafından sağlanan bir altyapıdır ve donanım aygıtlarının dinamik olarak algılanmasını ve yönetilmesini sağlar. systemd-udevd ise udev'in bir bileşenidir ve donanım olaylarını işlemek için kullanılır.
-
-systemd-udevd, donanım olaylarını izler ve bu olaylara göre belirli eylemler gerçekleştirir. Örneğin, bir USB cihazı takıldığında veya çıkarıldığında, systemd-udevd bu olayı algılar ve ilgili aygıt dosyasını oluşturur veya kaldırır. Ayrıca, donanım aygıtlarının durumunu güncellemek için de kullanılır. Örneğin, bir ağ arabirimi devre dışı bırakıldığında, systemd-udevd bu durumu algılar ve ilgili aygıt dosyasını günceller.
-
-systemd-udevd, Linux sistemlerinde donanım aygıtlarının dinamik olarak yönetilmesini sağlayarak sistem yöneticilerine büyük bir esneklik ve kolaylık sağlar. Bu hizmet, donanım aygıtlarının otomatik olarak algılanmasını ve yapılandırılmasını sağlar, böylece kullanıcılar yeni bir aygıt takıldığında veya çıkarıldığında manuel olarak müdahale etmek zorunda kalmazlar.
 

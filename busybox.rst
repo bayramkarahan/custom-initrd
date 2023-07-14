@@ -1,0 +1,33 @@
+busybox Nedir?
+++++++++++++++
+Busybox tek bir dosya halinde bulunan birçok araç seçine sahip olan bir programdır. Bu araçlar initramfs sisteminde ve sistem genelinde sıkça kullanılabilir. Busybox aşağıdaki gibi kullanılır. Örneğin, dosya listelemek için ls komutunu kullanmak isterseniz:
+
+.. code-block:: shell
+
+	$ busybox ls
+
+Busyboxtaki tüm araçları sisteme sembolik bağ atmak için aşağıdaki gibi bir yol izlenebilir. Bu işlem var olan dosyaları sildiği için tehlikeli olabilir. Sistemin tasarımına uygun olarak yapılmalıdır.
+
+.. code-block:: shell
+
+	$ busybox --install -s /bin # -s parametresi sembolik bağ olarak kurmaya yarar.
+
+Busybox **static** olarak derlenmediği sürece bir libc kütüphanesine ihtiyaç duyar. initramfs içerisinde kullanılacaksa içerisine libc dahil edilmelidir. Bir dosyanın static olarak derlenip derlenmediğini öğrenmek için aşağıdaki komut kullanılır.
+
+.. code-block:: shell
+
+	$ ldd /bin/busybox # static derlenmişse hata mesajı verir. Derlenmemişse bağımlılıklarını listeler.
+
+Busybox derlemek için öncelikle **make defconfig** kullanılarak veya önceden oluşturduğumuz yapılandırma dosyasını atarak yapılandırma işlemi yapılır. Ardından eğer static derleme yapacaksak yapılandırma dosyasına müdahale edilir. Son olarak **make** komutu kullanarak derleme işlemi yapılır.
+
+.. code-block:: shell
+
+	$ make defconfig
+	$ sed -i "s|.*CONFIG_STATIC_LIBGCC .*|CONFIG_STATIC_LIBGCC=y|" .config
+	$ sed -i "s|.*CONFIG_STATIC .*|CONFIG_STATIC=y|" .config
+	$ make
+
+Derleme bittiğinde kaynak kodun bulunduğu dizinde busybox dosyamız oluşmuş olur.
+
+Static olarak derlemiş olduğumuz busyboxu kullanarak milimal kök dizin oluşturabiliriz. Burada static yapı kallanılmayacaktır. 
+Sistemdeki /bin/busybox kullanılacaktır. Eğer yoksa busybox sisteme yüklenmelidir.

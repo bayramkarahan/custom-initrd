@@ -20,8 +20,8 @@ function lddscript(){
 	fi
 
 	# copy the binary itself
-	echo "---> copy binary itself"
-	cp --parents -v "${path_to_binary}" "${target_folder}"
+	#echo "---> copy binary itself"
+	#cp --parents -v "${path_to_binary}" "${target_folder}"
 
 	# copy the library dependencies
 	echo "---> copy libraries"
@@ -49,6 +49,8 @@ mkdir -p iso/boot/grub
 #*****************busybox hazırlanmalı************************
 cp /usr/bin/busybox initrd/bin/busybox #sistemden kopyalandı..
 lddscript initrd/bin/busybox initrd/ #sistemden kütüphaneler kopyalandı..
+cp /bin/bash initrd/bin/bash #sistemden kopyalandı..
+lddscript initrd/bin/bash initrd/ #sistemden kütüphaneler kopyalandı..
 
 #*****************kmod hazırlanacak***************************
 cp /usr/bin/kmod initrd/bin/kmod #sistemden kopyalandı..
@@ -111,14 +113,18 @@ udevadm trigger --type=subsystems --action=add
 udevadm trigger --type=devices --action=add
 udevadm settle || true
 
-
+modprobe ext4
 mkdir -p disk
 #diski bağlayalım
-modprobe ext4
-#mount /dev/sda1 disk
+mount /dev/sda1 disk
 
-#exec switch_root /disk /sin/init
+# dev sys proc taşıyalım
+mount --move /dev /disk/dev
+mount --move /sys /disk/sys
+mount --move /proc /disk/proc
 
+# servis yöneticisini çalıştıralım.
+exec switch_root /disk /sbin/init
 /bin/busybox ash
 
 EOF
